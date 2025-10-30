@@ -26,13 +26,12 @@ def train(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
 
-    energy = get_energy(args, device)
+    energy = get_energy(args, device, seed=args.seed, n_threads=args.n_threads)
     exp_name = get_name(args)
 
-    config = args.__dict__
     wandb.init(
         project=f"GFN-Diffusion-{args.energy_name}-{energy.ndim}d",
-        config=config,
+        config=args.__dict__,
         name=exp_name,
         tags=[f"seed{args.seed}"],
         mode="disabled" if args.disable_wandb else "online",
@@ -207,6 +206,7 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument("--ndim", type=int, default=2)
+    parser.add_argument("--n_threads", type=int, default=16)  # only for ALDP
     parser.add_argument("--exp_name", type=str, default="")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cpu", action="store_true", default=False)

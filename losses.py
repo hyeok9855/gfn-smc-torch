@@ -26,18 +26,16 @@ def db_loss(
     log_pbs: torch.Tensor,
     log_fs: torch.Tensor,
 ) -> torch.Tensor:
-    raise NotImplementedError  # TODO: implement DB loss
     db_discrepancy = log_fs[:, :-1] + log_pfs - log_fs[:, 1:] - log_pbs
     return (db_discrepancy**2).mean(-1)
 
 
-def subtb_loss(
+def subtb_lambda_loss(
     log_pfs: torch.Tensor,
     log_pbs: torch.Tensor,
     log_fs: torch.Tensor,
     coef_matrix: torch.Tensor,  # (T+1, T+1)
 ) -> torch.Tensor:
-    raise NotImplementedError  # TODO: implement subtb loss
     diff_logp = log_pfs - log_pbs  # (bs, T)
     diff_logp_padded = torch.cat(
         (torch.zeros((diff_logp.shape[0], 1)).to(diff_logp), diff_logp.cumsum(dim=-1)),
@@ -122,7 +120,7 @@ def get_loss(
             losses = subtb_chunk_loss(log_pfs, log_pbs, log_fs, subtb_chunk_size)
         else:
             assert subtb_coef_matrix is not None
-            losses = subtb_loss(log_pfs, log_pbs, log_fs, subtb_coef_matrix)
+            losses = subtb_lambda_loss(log_pfs, log_pbs, log_fs, subtb_coef_matrix)
     elif loss_type == "tb-subtb":
         losses = tb_subtb_loss(log_pfs, log_pbs, log_fs, subtb_chunk_size, subtb_weight)
     elif loss_type == "pis":
