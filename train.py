@@ -215,7 +215,7 @@ if __name__ == "__main__":
         "--loss_type",
         type=str,
         default="tb",
-        choices=("tb", "logvar", "db", "subtb", "tb-subtb", "pis", "rev_kl", "mle"),
+        choices=("tb", "logvar", "db", "subtb", "tb-subtb", "rev_kl", "mle"),
     )
     parser.add_argument("--subtb_lambda", type=float, default=2.0)
     parser.add_argument("--subtb_chunk_size", type=int, default=4)
@@ -390,7 +390,7 @@ if __name__ == "__main__":
     if args.lr_bwd is None:
         args.lr_bwd = args.lr_fwd
 
-    if args.loss_type == "mle" or args.loss_type == "pis":
+    if args.loss_type == "mle" or args.loss_type == "rev_kl":
         args.use_buffer = False
 
     if args.buffer_size == -1:

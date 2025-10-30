@@ -179,7 +179,7 @@ class GFN(nn.Module):
     def get_trajectory_fwd(
         self,
         batch_size: int,
-        pis=False,
+        detach=True,
         subtraj_len: int = 1,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         bsz = batch_size
@@ -193,7 +193,7 @@ class GFN(nn.Module):
         states[:, 0] = s
 
         for i in range(self.num_steps):  # from step 0 to self.num_steps - 1
-            s = s.detach() if not pis else s
+            s = s.detach() if detach else s
 
             t = torch.tensor([i * self.dt], device=self.device).repeat(bsz)
             pf_mean, pf_logvar, flow = self.pred_module.forward(s, t, self.energy.grad_log_reward)
@@ -201,7 +201,7 @@ class GFN(nn.Module):
             if self.pred_module.conditional_flow_model and i > 0 and i % subtraj_len == 0:
                 log_fs[:, i] = flow  # for i == 0, we use log Z + init_log_probs
 
-            s_, log_pfs[:, i] = self.forward_step(s, None, i, pf_mean, pf_logvar, detach=not pis)
+            s_, log_pfs[:, i] = self.forward_step(s, None, i, pf_mean, pf_logvar, detach=detach)
 
             t_next = t + self.dt
             mean_correction, var_correction = self.pred_module.backward(s_, t_next)
@@ -218,7 +218,7 @@ class GFN(nn.Module):
 
         # Assign the terminal reward
         # Set terminal reward based on whether we need gradients for PIS loss
-        with torch.enable_grad() if pis else torch.no_grad():
+        with torch.no_grad() if detach else torch.enable_grad():
             log_fs[:, -1] = self.energy.log_reward(states[:, -1])
 
         return states, log_pfs, log_pbs, log_fs, init_log_probs

@@ -123,9 +123,6 @@ def get_loss(
             losses = subtb_lambda_loss(log_pfs, log_pbs, log_fs, subtb_coef_matrix)
     elif loss_type == "tb-subtb":
         losses = tb_subtb_loss(log_pfs, log_pbs, log_fs, subtb_chunk_size, subtb_weight)
-    elif loss_type == "pis":
-        assert ndim is not None
-        losses = (1 / ndim) * ((log_pfs.sum(-1) + init_log_probs) - log_pbs.sum(-1) - log_fs[:, -1])
     elif loss_type == "rev_kl":
         assert ndim is not None
         losses = (1 / ndim) * ((log_pfs.sum(-1) + init_log_probs) - log_pbs.sum(-1) - log_fs[:, -1])

@@ -21,7 +21,7 @@ class Trainer:
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.MultiStepLR | None,
         clip_grad_norm: float,
-        loss_type: Literal["tb", "logvar", "db", "subtb", "tb-subtb", "pis", "mle"],
+        loss_type: Literal["tb", "logvar", "db", "subtb", "tb-subtb", "rev_kl", "mle"],
         subtb_lambda: float,
         subtb_chunk_size: int,
         n_epochs: int,
@@ -194,7 +194,7 @@ class Trainer:
     def fwd_train_step(self, it: int) -> torch.Tensor:
         # Forward sampling
         states, log_pfs, log_pbs, log_fs, init_log_probs = self.gfn_model.get_trajectory_fwd(
-            self.batch_size, pis=self.loss_type == "pis", subtraj_len=self.subtb_chunk_size
+            self.batch_size, detach=self.loss_type != "rev_kl", subtraj_len=self.subtb_chunk_size
         )
 
         # Compute losses
@@ -355,7 +355,7 @@ class Trainer:
                 _model_trajs, _log_pfs, _log_pbs, _log_fs, _init_log_probs = (
                     self.gfn_model.get_trajectory_fwd(
                         self.eval_batch_size,
-                        pis=self.loss_type == "pis",
+                        detach=self.loss_type != "rev_kl",
                         subtraj_len=self.subtb_chunk_size,
                     )
                 )
