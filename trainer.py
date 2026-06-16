@@ -402,7 +402,6 @@ class Trainer:
                 log_pbs,
                 log_rs,
                 init_log_probs,
-                log_Z=self.gfn_model.pred_module.log_Z,
                 gt_log_pfs=gt_log_pfs,
                 gt_log_pbs=gt_log_pbs,
                 gt_log_rewards=gt_log_rs,

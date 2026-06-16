@@ -140,7 +140,7 @@ def train(args):
     for it in pbar:
         metrics = dict()
 
-        ### Eval and plot###
+        # Eval and plot
         if it % args.eval_freq == 0:
             metrics.update(
                 trainer.eval_and_plot(
@@ -153,21 +153,23 @@ def train(args):
             elbo_cache = metrics["eval/elbo"]
             ess_cache = metrics["eval/ess(%)"]
 
-        ### Train ###
+        # Train
         metrics["train/loss"] = trainer.train_step(it)
+        metrics["train/logZ_learned"] = gfn_model.pred_module.log_Z.item()
         pbar.set_postfix(
             {
                 "Loss": metrics["train/loss"],
+                "LogZ_learned": metrics["train/logZ_learned"],
                 "EUBO": eubo_cache,
                 "ELBO": elbo_cache,
                 "ESS": ess_cache,
             }
         )
 
-        ### Log ###
+        # Log
         wandb.log(metrics, step=it)
 
-    ### Final eval and plot ###
+    # Final eval and plot
     final_metrics = trainer.eval_and_plot(
         data_size=args.final_eval_data_size,
         full_eval=True if args.full_eval else False,
@@ -244,7 +246,7 @@ if __name__ == "__main__":
     parser.add_argument("--precision", type=str, default="float", choices=("float", "double"))
 
     ################################################################
-    ### Diffusion process
+    # Diffusion process
     parser.add_argument("--num_steps", type=int, default=100)
     parser.add_argument(
         "--reference_process",
@@ -258,7 +260,7 @@ if __name__ == "__main__":
     ################################################################
 
     ################################################################
-    ### MLP parameters
+    # MLP parameters
     parser.add_argument("--hidden_dim", type=int, default=64)
     # parser.add_argument("--s_emb_dim", type=int, default=64)
     # parser.add_argument("--t_emb_dim", type=int, default=64)
@@ -287,7 +289,7 @@ if __name__ == "__main__":
     ################################################################
 
     ################################################################
-    ### For replay buffer
+    # For replay buffer
     parser.add_argument("--use_buffer", action="store_true", default=False)
     parser.add_argument("--buffer_size", type=int, default=-1)  # 100 * batch_size by default
     # prioritization
@@ -315,7 +317,7 @@ if __name__ == "__main__":
     ################################################################
 
     ################################################################
-    ### For SMC
+    # For SMC
     parser.add_argument("--smc", action="store_true", default=False)
     parser.add_argument(
         "--smc_sampling",
@@ -329,7 +331,7 @@ if __name__ == "__main__":
     ################################################################
 
     ################################################################
-    ### For MCMC
+    # For MCMC
     parser.add_argument("--mcmc_type", type=str, default="none", choices=("none", "md", "mala"))
     parser.add_argument("--mcmc_freq", type=int, default=100)
     parser.add_argument("--mcmc_batch_size", type=int, default=100)
@@ -341,13 +343,13 @@ if __name__ == "__main__":
     ################################################################
 
     ################################################################
-    ### Inverse temperature of the energy
+    # Inverse temperature of the energy
     parser.add_argument("--invtemp", type=float, default=1.0)
     parser.add_argument("--no_invtemp_anneal", action="store_false", dest="invtemp_anneal")
     ################################################################
 
     ################################################################
-    ### Eval & Plot
+    # Eval & Plot
     parser.add_argument("--disable_wandb", action="store_true", default=False)
     parser.add_argument("--eval_freq", type=int, default=100)
     parser.add_argument("--eval_data_size", type=int, default=2000)

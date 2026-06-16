@@ -79,7 +79,7 @@ def get_name(args: argparse.Namespace) -> str:
         if args.partial_energy:
             name += "-partialE"
             if args.learn_beta:
-                name += f"-learnbeta"
+                name += "-learnbeta"
 
     name += f"_ref{args.reference_process}"
     if args.reference_process == "pinned_brownian":
@@ -101,7 +101,7 @@ def get_name(args: argparse.Namespace) -> str:
     if args.use_weight_decay:
         name += f"-wd{args.weight_decay}"
     if args.use_scheduler:
-        name += f"-lrsch"
+        name += "-lrsch"
 
     name += f"_numsteps{args.num_steps}"
 

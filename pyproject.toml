@@ -67,3 +67,6 @@ torch = [
     { index = "pytorch-cu130", group = "cu130" },
     { index = "pytorch-cpu", group = "cpu" },
 ]
+
+[tool.black]
+line-length = 100

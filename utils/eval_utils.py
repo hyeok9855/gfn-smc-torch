@@ -1,7 +1,7 @@
 import math
 from typing import cast
 
-import jax
+# import jax
 import jax.numpy as jnp
 import numpy as np
 import ot as pot
@@ -356,7 +356,6 @@ def density_metrics(
     log_pbs: torch.Tensor,
     log_rewards: torch.Tensor,
     init_log_probs: torch.Tensor,
-    log_Z: torch.Tensor,
     gt_log_pfs: torch.Tensor | None = None,
     gt_log_pbs: torch.Tensor | None = None,
     gt_log_rewards: torch.Tensor | None = None,
@@ -365,7 +364,6 @@ def density_metrics(
 ) -> dict:
     log_weights = log_rewards + log_pbs.sum(-1) - (log_pfs.sum(-1) + init_log_probs)
     iw_elbo = logmeanexp(log_weights).item()
-    log_Z_learned = log_Z.item()
     elbo = log_weights.mean().item()
     if gt_log_rewards is not None:
         assert (gt_log_pfs is not None) and (gt_log_pbs is not None)
@@ -378,7 +376,6 @@ def density_metrics(
         eubo = float("nan")
     ess = 1.0 / (log_weights.softmax(0) ** 2).sum().item()
     metrics = {
-        "log_Z_learned": log_Z_learned,
         "elbo": elbo,
         "eubo": eubo,
         "eubo-elbo": eubo - elbo,

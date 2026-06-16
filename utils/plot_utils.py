@@ -2,7 +2,6 @@ import itertools
 import warnings
 
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch
 import wandb
@@ -10,6 +9,8 @@ from PIL import Image as PILImage
 
 from energies import BaseEnergy
 from utils.particle_system import interatomic_distance
+
+matplotlib.use("Agg")
 
 
 def visualize(
@@ -31,7 +32,9 @@ def visualize(
     return {k.replace("visualization", f"visualization{suffix}"): v for k, v in out_dict.items()}
 
 
-### Helper functions for vizualization ###
+# ####################################
+# Helper functions for vizualization #
+# ####################################
 
 
 def sliced_log_reward(x: torch.Tensor, energy: BaseEnergy, dims: tuple) -> torch.Tensor:
@@ -42,6 +45,7 @@ def sliced_log_reward(x: torch.Tensor, energy: BaseEnergy, dims: tuple) -> torch
 
 def fig_to_image(fig):
     import numpy as np
+
     fig.canvas.draw()
     rgba = np.asarray(fig.canvas.buffer_rgba())
     return PILImage.fromarray(rgba).convert("RGB")
