@@ -23,6 +23,10 @@ def train(args):
 
     if args.precision == "double":
         torch.set_default_dtype(torch.float64)
+    elif args.precision == "float":
+        torch.set_default_dtype(torch.float32)
+    else:
+        raise ValueError(f"Invalid precision: {args.precision}")
 
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
 

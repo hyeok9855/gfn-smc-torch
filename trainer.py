@@ -179,7 +179,7 @@ class Trainer:
             print(f"Loss is inf or too large: {loss.item()}; skipping this batch...")
             return loss.item()
         elif loss.isnan():
-            raise ValueError(f"Loss is NaN")
+            raise ValueError("Loss is NaN")
 
         loss.backward()
         if self.clip_grad_norm > 0.0:

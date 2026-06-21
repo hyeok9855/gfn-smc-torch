@@ -45,9 +45,9 @@ def get_gfn_optimizer(
     return gfn_optimizer, gfn_scheduler
 
 
-###########################################
-### Importance weight related functions ###
-###########################################
+#######################################
+# Importance weight related functions #
+#######################################
 
 
 def solve_mixing_ratio(normalized_weights: torch.Tensor, target_ess: float) -> float:

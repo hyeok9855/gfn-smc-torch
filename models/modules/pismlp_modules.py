@@ -37,7 +37,10 @@ class PISMLPModule(MLPModule):
                 else nn.Identity()
             )
             self.flow_model = FlowModelPIS(
-                self.flow_s_emb_dim, self.flow_hidden_dim, 1, self.flow_layers
+                self.flow_s_emb_dim if not self.share_embeddings else self.s_emb_dim,
+                self.flow_hidden_dim,
+                1,
+                self.flow_layers,
             )
 
         self.lp_scaling_model = None
