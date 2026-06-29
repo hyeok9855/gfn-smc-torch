@@ -94,13 +94,7 @@ class Trainer:
         self._invtemp = invtemp
         self.invtemp_anneal = invtemp_anneal
 
-        self.init_log_Z = self.init_log_Z_pbs_over_pfs = self.init_log_Z_log_rs = None
-        if isinstance(init_log_Z, float):
-            self.gfn_model.pred_module.set_log_Z(init_log_Z)
-        else:
-            self.init_log_Z = init_log_Z
-            self.init_log_Z_pbs_over_pfs = torch.zeros((0,)).to(self.device)
-            self.init_log_Z_log_rs = torch.zeros((0,)).to(self.device)
+        self.init_log_Z = init_log_Z
 
         # Eval and Plot
         self.eval_batch_size = eval_batch_size
@@ -120,7 +114,16 @@ class Trainer:
         with torch.no_grad():
             for _ in range(self.prefill_epochs):
                 if not self.smc:
-                    self.fwd_train_step(0)
+                    states, log_pfs, log_pbs, log_fs, init_log_probs = (
+                        self.gfn_model.get_trajectory_fwd(
+                            self.batch_size,
+                            detach=self.loss_type != "rev_kl",
+                            subtraj_len=self.subtb_chunk_size,
+                        )
+                    )
+                    xs = states[:, -1]
+                    log_rs = log_fs[:, -1]
+                    log_iws = log_rs + log_pbs.sum(-1) - (log_pfs.sum(-1) + init_log_probs)
                 else:
                     xs, log_iws, log_rs = self.gfn_model.get_trajectory_fwd_smc(
                         self.batch_size,
@@ -129,35 +132,37 @@ class Trainer:
                         self.smc_resample_threshold,
                         self.smc_target_ess,
                     )
-                    self.buffer.add(xs=xs, log_rs=log_rs, log_iws=log_iws, losses=None)
+                self.buffer.add(xs=xs, log_rs=log_rs, log_iws=log_iws)
 
     def initialize_log_Z(self) -> None:
-        assert self.init_log_Z_pbs_over_pfs is not None and self.init_log_Z_log_rs is not None
-
-        if self.init_log_Z_pbs_over_pfs.shape[0] == 0:
+        if isinstance(self.init_log_Z, float):
+            self.gfn_model.pred_module.set_log_Z(self.init_log_Z)
+        else:
             # sample one batch to initialize log_Z
             with torch.no_grad():
-                self.fwd_train_step(0)
+                _, log_pfs, log_pbs, log_fs, init_log_probs = self.gfn_model.get_trajectory_fwd(
+                    self.batch_size,
+                    detach=self.loss_type != "rev_kl",
+                    subtraj_len=self.subtb_chunk_size,
+                )
 
-        log_iws = self.init_log_Z_pbs_over_pfs + (self.init_log_Z_log_rs * self.get_invtemp(1))
-        if self.init_log_Z == "iw_elbo":
-            init_log_Z_val = logmeanexp(log_iws).item()
-        elif self.init_log_Z == "elbo":
-            init_log_Z_val = log_iws.mean().item()
-        else:
-            raise ValueError(f"Invalid init_log_Z: {self.init_log_Z}")
-        self.gfn_model.pred_module.set_log_Z(init_log_Z_val)
-        del self.init_log_Z_pbs_over_pfs
-        del self.init_log_Z_log_rs
-        self.init_log_Z = None
+            log_rs = log_fs[:, -1] * self.get_invtemp(1)
+            log_iws = log_rs + log_pbs.sum(-1) - (log_pfs.sum(-1) + init_log_probs)
+
+            if self.init_log_Z == "iw_elbo":
+                init_log_Z_val = logmeanexp(log_iws).item()
+            elif self.init_log_Z == "elbo":
+                init_log_Z_val = log_iws.mean().item()
+            else:
+                raise ValueError(f"Invalid init_log_Z: {self.init_log_Z}")
+            self.gfn_model.pred_module.set_log_Z(init_log_Z_val)
 
     def train_step(self, it: int) -> float:
         self.gfn_model.train()
         if it == 0:
             if self.prefill_epochs > 0:
                 self.prefill()
-            if self.init_log_Z is not None:
-                self.initialize_log_Z()
+            self.initialize_log_Z()
 
         if self.loss_type == "mle":
             loss = self.bwd_train_step(it)
@@ -219,13 +224,6 @@ class Trainer:
                 log_iws=log_fs[:, -1] + log_pbs.sum(-1) - (log_pfs.sum(-1) + init_log_probs),
                 losses=losses,
             )
-
-        if it == 0 and self.init_log_Z is not None:
-            assert self.init_log_Z_pbs_over_pfs is not None and self.init_log_Z_log_rs is not None
-            assert self.gfn_model.pred_module.log_Z.item() == 0.0
-            ratios = (log_pbs.sum(-1) - (log_pfs.sum(-1) + init_log_probs)).detach()
-            self.init_log_Z_pbs_over_pfs = torch.cat([self.init_log_Z_pbs_over_pfs, ratios], dim=0)
-            self.init_log_Z_log_rs = torch.cat([self.init_log_Z_log_rs, log_fs[:, -1]], dim=0)
 
         loss = losses.mean()
         return loss

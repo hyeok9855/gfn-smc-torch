@@ -97,7 +97,6 @@ def get_loss(
     init_log_probs: torch.Tensor,
     log_Z: torch.Tensor,
     invtemp: float = 1.0,
-    logr_clip: float = -1e5,
     subtb_coef_matrix: torch.Tensor | None = None,
     subtb_chunk_size: int = 0,
     subtb_weight: float = 1.0,
@@ -106,7 +105,7 @@ def get_loss(
     # Avoid in-place mutation
     first_col = (log_Z + init_log_probs).unsqueeze(1)
     middle_cols = log_fs[:, 1:-1]
-    last_col = (torch.clamp(log_fs[:, -1], min=logr_clip) * invtemp).unsqueeze(1)
+    last_col = (log_fs[:, -1] * invtemp).unsqueeze(1)
     log_fs = torch.cat([first_col, middle_cols, last_col], dim=1)
 
     if loss_type == "tb":

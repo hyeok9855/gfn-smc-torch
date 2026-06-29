@@ -40,7 +40,6 @@ class ALDP(BaseEnergy):
         chirality_ind=[17, 26],
         chirality_mean_diff=-0.043,
         chirality_threshold=0.8,
-        chirality_sharpness=100.0,
     ):
         super().__init__(device=device, ndim=60, seed=seed)  # 60 since we use internal coordinates
 
@@ -150,7 +149,6 @@ class ALDP(BaseEnergy):
         self.chirality_ind = chirality_ind
         self.chirality_mean_diff = chirality_mean_diff
         self.chirality_threshold = chirality_threshold
-        self.chirality_sharpness = chirality_sharpness
 
         datas = [np.load(DATA_PATH / f"val_before_scale{i}.npy") for i in range(5)]
         approx_sample = torch.tensor(np.concatenate(datas, axis=0), dtype=dtype)
@@ -186,7 +184,7 @@ class ALDP(BaseEnergy):
 
     def _compute_chirality_penalty(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Compute smooth chirality penalty that encourages L-form configurations.
+        Compute hard chirality penalty that encourages L-form configurations.
 
         Args:
             x: Input tensor of shape (batch_size, 60) in the internal coordinate space
@@ -196,14 +194,6 @@ class ALDP(BaseEnergy):
         """
         is_l_form = self.get_lform_indices(x)
         penalty = (2 * self.energy_cut) * (1 - is_l_form.float())
-
-        # # Smooth penalty using sigmoid function
-        # # - When deviation < threshold: penalty ≈ 0 (L-form region)
-        # # - When deviation > threshold: penalty increases smoothly (D-form region)
-        # penalty = self.chirality_penalty_strength * torch.sigmoid(
-        #     (deviation - self.chirality_threshold) * self.chirality_sharpness
-        # )
-
         return penalty
 
     def sample(self, batch_size: int, seed: int | None = None) -> torch.Tensor:
